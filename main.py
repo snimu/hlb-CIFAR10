@@ -670,15 +670,13 @@ def main():
 def eval_fn(model, device):
     global data, hyp
     model.eval()
-    loss = 0.0
-    iters = 0
+    loss_list = []
     for x, y in get_batches(data, key='eval', batchsize=2500):
         x, y = x.to(device), y.to(device)
         y_pred = model(x)
-        loss += loss_fn(y_pred, y).item()
-        iters += 1
+        loss_list.append(loss_fn(y_pred, y).float().mean())
 
-    return loss / iters
+    return torch.stack(loss_list).mean().item()
 
 
 @torch.no_grad()
