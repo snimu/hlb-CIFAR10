@@ -698,7 +698,7 @@ def eval_model(model, device):
                0] % eval_batchsize == 0, "Error: The eval batchsize must evenly divide the eval dataset (for now, we don't have drop_remainder implemented yet)."
     loss_list_val, acc_list, acc_list_ema = [], [], []
 
-    for inputs, targets in get_batches(data, key='eval', batchsize=eval_batchsize):
+    for inputs, targets in get_batches(data, key='eval', batchsize=eval_batchsize, cutmix_size=1):
         outputs = model(inputs)
         loss_list_val.append(loss_fn(outputs, targets).float().mean())
         acc_list.append((outputs.argmax(-1) == targets.argmax(-1)).float().mean())
