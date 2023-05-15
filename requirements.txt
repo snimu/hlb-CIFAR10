@@ -1,2 +1,6 @@
 torch
 torchvision
+graphviz
+torchview
+rebasin>=0.0.38
+pandas

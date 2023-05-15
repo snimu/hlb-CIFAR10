@@ -17,9 +17,11 @@ import copy
 import torch
 import torch.nn.functional as F
 from torch import nn
+import pandas as pd
 
 import torchvision
 from torchvision import transforms
+import rebasin
 
 ## <-- teaching comments
 # <-- functional comments
@@ -661,10 +663,143 @@ def main():
           # Print out our training details (sorry for the complexity, the whole logging business here is a bit of a hot mess once the columns need to be aligned and such....)
           ## We also check to see if we're in our final epoch so we can print the 'bottom' of the table for each round.
           print_training_details(list(map(partial(format_for_table, locals=locals()), logging_columns_list)), is_final_entry=(epoch >= math.ceil(hyp['misc']['train_epochs'] - 1)))
-    return ema_val_acc # Return the final ema accuracy achieved (not using the 'best accuracy' selection strategy, which I think is okay here....)
+    return net, ema_val_acc # Return the final ema accuracy achieved (not using the 'best accuracy' selection strategy, which I think is okay here....)
+
+
+@torch.no_grad()
+def eval_fn(model, device):
+    global data, hyp
+    model.eval()
+    loss = 0.0
+    iters = 0
+    for x, y in get_batches(data, key='eval', batchsize=2500):
+        x, y = x.to(device), y.to(device)
+        y_pred = model(x)
+        loss += loss_fn(y_pred, y).item()
+        iters += 1
+
+    return loss / iters
+
+
+@torch.no_grad()
+def eval_model(model, device):
+    global data, hyp
+
+    model = model.to(device)
+
+    # Recalculate BatchNorm running stats
+    model.train()
+    for x, _ in get_batches(data, key='train', batchsize=2500):
+        x = x.to(device)
+        model(x)
+
+    # Evaluate
+    model.eval()
+    eval_batchsize = 2500
+    assert data['eval']['images'].shape[
+               0] % eval_batchsize == 0, "Error: The eval batchsize must evenly divide the eval dataset (for now, we don't have drop_remainder implemented yet)."
+    loss_list_val, acc_list, acc_list_ema = [], [], []
+
+    for inputs, targets in get_batches(data, key='eval', batchsize=eval_batchsize):
+        outputs = model(inputs)
+        loss_list_val.append(loss_fn(outputs, targets).float().mean())
+        acc_list.append((outputs.argmax(-1) == targets.argmax(-1)).float().mean())
+
+    val_acc = torch.stack(acc_list).mean().item()
+    val_loss = torch.stack(loss_list_val).mean().item()
+
+    return val_loss, val_acc
+
 
 if __name__ == "__main__":
-    acc_list = []
-    for run_num in range(25):
-        acc_list.append(torch.tensor(main()))
-    print("Mean and variance:", (torch.mean(torch.stack(acc_list)).item(), torch.var(torch.stack(acc_list)).item()))
+    ma, _ = main()
+    mb, _ = main()
+    mbo = copy.deepcopy(mb)
+
+    os.makedirs('models', exist_ok=True)
+    torch.save(ma.state_dict(), 'models/model_a.pth')
+    torch.save(mb.state_dict(), 'models/model_b_orig.pth')
+
+    print("Rebasin...")
+    batch = next(get_batches(data, key='eval', batchsize=2500))
+    pcd = rebasin.PermutationCoordinateDescent(ma, mb, batch, verbose=True)
+    pcd.rebasin()
+
+    torch.save(mb.state_dict(), 'models/model_b_rebasin.pth')
+
+    print("Interpolating between models...")
+    print("A-B-Rebasin")
+    os.makedirs('models/lerp-a-b-rebasin', exist_ok=True)
+    interp = rebasin.interpolation.LerpSimple(
+        [ma, mb], eval_fn, save_all=True, savedir="models/lerp-a-b", verbose=True
+    )
+    interp.interpolate(steps=99)
+
+    print("A-B-Orig")
+    os.makedirs('models/lerp-a-b-orig', exist_ok=True)
+    interp = rebasin.interpolation.LerpSimple(
+        [ma, mbo], eval_fn, save_all=True, savedir="models/lerp-a-b-orig", verbose=True
+    )
+    interp.interpolate(steps=99)
+
+    print("A-Orig-B-Rebasin")
+    os.makedirs('models/lerp-b-orig-b-rebasin', exist_ok=True)
+    interp = rebasin.interpolation.LerpSimple(
+        [mbo, mb], eval_fn, save_all=True, savedir="models/lerp-b-orig-b-rebasin", verbose=True
+    )
+    interp.interpolate(steps=99)
+
+    print("Evaluating models...")
+    print("Original models...")
+    loss_a, acc_a = eval_model(ma, "cuda")
+    loss_br, acc_br = eval_model(mb, "cuda")
+    loss_bo, acc_bo = eval_model(mbo, "cuda")
+
+    del mb, mbo
+    working_model = copy.deepcopy(ma)
+    del ma
+
+    filenames = next(os.walk("models/lerp-a-b-rebasin"))[2]
+
+    print("a-b-rebasin")
+    losses_a_b_rebasin, accs_a_b_rebasin = [], []
+    for name in filenames:
+        working_model.load_state_dict(torch.load(f"models/lerp-a-b-rebasin/{name}"))
+        loss, acc = eval_model(working_model, "cuda")
+        losses_a_b_rebasin.append(loss)
+        accs_a_b_rebasin.append(acc)
+
+    print("a-b-orig")
+    losses_a_b_orig, accs_a_b_orig = [], []
+    filenames = next(os.walk("models/lerp-a-b-orig"))[2]
+    for name in filenames:
+        working_model.load_state_dict(torch.load(f"models/lerp-a-b-orig/{name}"))
+        loss, acc = eval_model(working_model, "cuda")
+        losses_a_b_orig.append(loss)
+        accs_a_b_orig.append(acc)
+
+    print("b-orig-b-rebasin")
+    losses_b_orig_b_rebasin, accs_b_orig_b_rebasin = [], []
+    filenames.extend(next(os.walk("models/lerp-b-orig-b-rebasin"))[2])
+    for name in filenames:
+        working_model.load_state_dict(torch.load(f"models/lerp-b-orig-b-rebasin/{name}"))
+        loss, acc = eval_model(working_model, "cuda")
+        losses_b_orig_b_rebasin.append(loss)
+        accs_b_orig_b_rebasin.append(acc)
+
+    print("Saving results...")
+    losses = {
+        "a-b-rebasin": losses_a_b_rebasin,
+        "a-b-orig": losses_a_b_orig,
+        "b-orig-b-rebasin": losses_b_orig_b_rebasin,
+    }
+    accs = {
+        "a-b-rebasin": accs_a_b_rebasin,
+        "a-b-orig": accs_a_b_orig,
+        "b-orig-b-rebasin": accs_b_orig_b_rebasin,
+    }
+
+    df_losses = pd.DataFrame(losses)
+    df_accs = pd.DataFrame(accs)
+    df_losses.to_csv("results/losses.csv")
+    df_accs.to_csv("results/accs.csv")
