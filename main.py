@@ -671,7 +671,7 @@ def eval_fn(model, device):
     global data, hyp
     model.eval()
     loss_list = []
-    for x, y in get_batches(data, key='eval', batchsize=2500):
+    for x, y in get_batches(data, key='eval', batchsize=2500, cutmix_size=1):
         x, y = x.to(device), y.to(device)
         y_pred = model(x)
         loss_list.append(loss_fn(y_pred, y).float().mean())
@@ -687,7 +687,7 @@ def eval_model(model, device):
 
     # Recalculate BatchNorm running stats
     model.train()
-    for x, _ in get_batches(data, key='train', batchsize=2500):
+    for x, _ in get_batches(data, key='train', batchsize=2500, cutmix_size=1):
         x = x.to(device)
         model(x)
 
