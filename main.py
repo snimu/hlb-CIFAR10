@@ -787,7 +787,7 @@ if __name__ == "__main__":
 
     print("b-orig-b-rebasin")
     losses_b_orig_b_rebasin, accs_b_orig_b_rebasin = [], []
-    filenames.extend(next(os.walk("models/lerp-b-orig-b-rebasin"))[2])
+    filenames = next(os.walk("models/lerp-b-orig-b-rebasin"))[2]
     for name in filenames:
         working_model.load_state_dict(torch.load(f"models/lerp-b-orig-b-rebasin/{name}"))
         loss, acc = eval_model(working_model, "cuda")
@@ -806,7 +806,6 @@ if __name__ == "__main__":
         "b-orig-b-rebasin": accs_b_orig_b_rebasin,
     }
 
-    print(len(losses_a_b_rebasin), len(losses_a_b_orig), len(losses_b_orig_b_rebasin))
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
     df_losses.to_csv("results/losses.csv")
