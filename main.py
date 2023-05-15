@@ -734,7 +734,7 @@ if __name__ == "__main__":
     interp = rebasin.interpolation.LerpSimple(
         [ma, mb], eval_fn,
         devices=["cuda", "cuda"],
-        save_all=True, savedir="models/lerp-a-b", verbose=True
+        save_all=True, savedir="models/lerp-a-b-rebasin", verbose=True
     )
     interp.interpolate(steps=99)
 
