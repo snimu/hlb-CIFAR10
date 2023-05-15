@@ -721,7 +721,7 @@ if __name__ == "__main__":
     torch.save(mb.state_dict(), 'models/model_b_orig.pth')
 
     print("Rebasin...")
-    batch = next(get_batches(data, key='eval', batchsize=2500))
+    batch, _ = next(get_batches(data, key='eval', batchsize=2500))
     pcd = rebasin.PermutationCoordinateDescent(ma, mb, batch, verbose=True)
     pcd.rebasin()
 
