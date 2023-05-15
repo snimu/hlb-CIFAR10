@@ -806,6 +806,7 @@ if __name__ == "__main__":
         "b-orig-b-rebasin": accs_b_orig_b_rebasin,
     }
 
+    os.makedirs("results", exist_ok=True)
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
     df_losses.to_csv("results/losses.csv")
