@@ -722,7 +722,10 @@ if __name__ == "__main__":
 
     print("Rebasin...")
     batch, _ = next(get_batches(data, key='eval', batchsize=2500))
-    pcd = rebasin.PermutationCoordinateDescent(ma, mb, batch, verbose=True)
+    batch = batch.to("cuda")
+    pcd = rebasin.PermutationCoordinateDescent(
+        ma, mb, batch, verbose=True, device_a="cuda", device_b="cuda"
+    )
     pcd.rebasin()
 
     torch.save(mb.state_dict(), 'models/model_b_rebasin.pth')
@@ -731,21 +734,27 @@ if __name__ == "__main__":
     print("A-B-Rebasin")
     os.makedirs('models/lerp-a-b-rebasin', exist_ok=True)
     interp = rebasin.interpolation.LerpSimple(
-        [ma, mb], eval_fn, save_all=True, savedir="models/lerp-a-b", verbose=True
+        [ma, mb], eval_fn,
+        devices=["cuda", "cuda"],
+        save_all=True, savedir="models/lerp-a-b", verbose=True
     )
     interp.interpolate(steps=99)
 
     print("A-B-Orig")
     os.makedirs('models/lerp-a-b-orig', exist_ok=True)
     interp = rebasin.interpolation.LerpSimple(
-        [ma, mbo], eval_fn, save_all=True, savedir="models/lerp-a-b-orig", verbose=True
+        [ma, mbo], eval_fn,
+        devices=["cuda", "cuda"],
+        save_all=True, savedir="models/lerp-a-b-orig", verbose=True
     )
     interp.interpolate(steps=99)
 
     print("A-Orig-B-Rebasin")
     os.makedirs('models/lerp-b-orig-b-rebasin', exist_ok=True)
     interp = rebasin.interpolation.LerpSimple(
-        [mbo, mb], eval_fn, save_all=True, savedir="models/lerp-b-orig-b-rebasin", verbose=True
+        [mbo, mb], eval_fn,
+        devices=["cuda", "cuda"],
+        save_all=True, savedir="models/lerp-b-orig-b-rebasin", verbose=True
     )
     interp.interpolate(steps=99)
 
