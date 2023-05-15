@@ -796,14 +796,14 @@ if __name__ == "__main__":
 
     print("Saving results...")
     losses = {
-        "a-b-rebasin": losses_a_b_rebasin,
-        "a-b-orig": losses_a_b_orig,
-        "b-orig-b-rebasin": losses_b_orig_b_rebasin,
+        "a-b-rebasin": [loss_a] + losses_a_b_rebasin + [loss_br],
+        "a-b-orig": [loss_a] + losses_a_b_orig + [loss_bo],
+        "b-orig-b-rebasin": [loss_bo] + losses_b_orig_b_rebasin + [loss_br],
     }
     accs = {
-        "a-b-rebasin": accs_a_b_rebasin,
-        "a-b-orig": accs_a_b_orig,
-        "b-orig-b-rebasin": accs_b_orig_b_rebasin,
+        "a-b-rebasin": [acc_a] + accs_a_b_rebasin + [acc_br],
+        "a-b-orig": [acc_a] + accs_a_b_orig + [acc_bo],
+        "b-orig-b-rebasin": [acc_bo] + accs_b_orig_b_rebasin + [acc_br],
     }
 
     os.makedirs("results", exist_ok=True)
