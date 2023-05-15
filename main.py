@@ -806,6 +806,7 @@ if __name__ == "__main__":
         "b-orig-b-rebasin": accs_b_orig_b_rebasin,
     }
 
+    print(len(losses_a_b_rebasin), len(losses_a_b_orig), len(losses_b_orig_b_rebasin))
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
     df_losses.to_csv("results/losses.csv")
