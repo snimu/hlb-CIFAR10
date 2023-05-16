@@ -718,9 +718,7 @@ def get_filenames(directory):
     if "model_1.pt" in filenames:
         filenames.remove("model_1.pt")
 
-    sortkey = lambda x: float(x[-8:-3])
-    filenames.sort(key=sortkey)
-
+    filenames.sort(key=lambda x: float(x[-8:-3]))
     return filenames
 
 
