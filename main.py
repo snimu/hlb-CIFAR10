@@ -723,7 +723,7 @@ def get_filenames(directory):
     return filenames
 
 
-def rebasin():
+def rebasin_model():
     ma, _ = train_model()
     mb, _ = train_model()
     mbo = copy.deepcopy(mb)
@@ -854,7 +854,7 @@ def main():
     if hparams.draw:
         draw()
     else:
-        rebasin()
+        rebasin_model()
 
 
 if __name__ == '__main__':
