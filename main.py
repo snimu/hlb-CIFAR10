@@ -8,6 +8,7 @@ try:
 except NameError:
   pass ## we're still good
 """
+import argparse
 import functools
 from functools import partial
 import math
@@ -710,6 +711,12 @@ def eval_model(model, device):
 
 
 if __name__ == "__main__":
+    # Enable larger convolutional kernel sizes
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--multiplier_kernel_size', type=int, default=1)
+    hparams = parser.parse_args()
+    default_conv_kwargs['kernel_size'] *= hparams.multiplier_kernel_size
+
     ma, _ = main()
     mb, _ = main()
     mbo = copy.deepcopy(mb)
@@ -806,8 +813,10 @@ if __name__ == "__main__":
         "b-orig-b-rebasin": [acc_bo] + accs_b_orig_b_rebasin + [acc_br],
     }
 
+    kernel_size = default_conv_kwargs['kernel_size']
+
     os.makedirs("results", exist_ok=True)
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
-    df_losses.to_csv("results/losses.csv")
-    df_accs.to_csv("results/accs.csv")
+    df_losses.to_csv(f"results/losses{kernel_size}.csv")
+    df_accs.to_csv(f"results/accs{kernel_size}.csv")
