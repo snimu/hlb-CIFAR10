@@ -711,6 +711,19 @@ def eval_model(model, device):
     return val_loss, val_acc
 
 
+def get_filenames(directory):
+    filenames = next(os.walk(directory))[2]
+    if "model_0.pt" in filenames:
+        filenames.remove("model_0.pt")
+    if "model_1.pt" in filenames:
+        filenames.remove("model_1.pt")
+
+    sortkey = lambda x: float(x[-8:-3])
+    filenames.sort(key=sortkey)
+
+    return filenames
+
+
 if __name__ == "__main__":
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
@@ -774,12 +787,9 @@ if __name__ == "__main__":
     working_model = copy.deepcopy(ma)
     del ma
 
-    sortkey = lambda x: float(x[-8:-3])
-
     print("a-b-rebasin")
     losses_a_b_rebasin, accs_a_b_rebasin = [], []
-    filenames = next(os.walk("models/lerp-a-b-rebasin"))[2]
-    filenames.sort(key=sortkey)
+    filenames = get_filenames("models/lerp-a-b-rebasin")
     loop = tqdm(filenames)
     for name in loop:
         loop.set_description(name)
@@ -790,8 +800,7 @@ if __name__ == "__main__":
 
     print("a-b-orig")
     losses_a_b_orig, accs_a_b_orig = [], []
-    filenames = next(os.walk("models/lerp-a-b-orig"))[2]
-    filenames.sort(key=sortkey)
+    filenames = get_filenames("models/lerp-a-b-orig")
     loop = tqdm(filenames)
     for name in loop:
         loop.set_description(name)
@@ -802,8 +811,7 @@ if __name__ == "__main__":
 
     print("b-orig-b-rebasin")
     losses_b_orig_b_rebasin, accs_b_orig_b_rebasin = [], []
-    filenames = next(os.walk("models/lerp-b-orig-b-rebasin"))[2]
-    filenames.sort(key=sortkey)
+    filenames = get_filenames("models/lerp-b-orig-b-rebasin")
     loop = tqdm(filenames)
     for name in loop:
         loop.set_description(name)
