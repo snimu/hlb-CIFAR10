@@ -826,4 +826,4 @@ if __name__ == "__main__":
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
     df_losses.to_csv(f"results/losses{kernel_size}.csv")
-    df_accs.to_csv(f"results/accs{kernel_size}.csv")
+    df_accs.to_csv(f"results/accuracies{kernel_size}.csv")
