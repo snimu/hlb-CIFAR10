@@ -820,10 +820,10 @@ if __name__ == "__main__":
         "b-orig-b-rebasin": [acc_bo] + accs_b_orig_b_rebasin + [acc_br],
     }
 
-    kernel_size = default_conv_kwargs['kernel_size']
+    ks = default_conv_kwargs['kernel_size']
 
     os.makedirs("results", exist_ok=True)
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
-    df_losses.to_csv(f"results/losses{kernel_size}.csv")
-    df_accs.to_csv(f"results/accuracies{kernel_size}.csv")
+    df_losses.to_csv(f"results/{ks}x{ks}-losses.csv")
+    df_accs.to_csv(f"results/{ks}x{ks}-accuracies.csv")
