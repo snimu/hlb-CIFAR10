@@ -5,3 +5,7 @@ torchview
 rebasin>=0.0.38
 pandas
 tqdm
+graphviz
+torchview
+rebasin>=0.0.39
+

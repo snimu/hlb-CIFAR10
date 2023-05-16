@@ -20,6 +20,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 import pandas as pd
+from torchview import draw_graph
 
 import torchvision
 from torchvision import transforms
@@ -530,7 +531,7 @@ print_training_details(logging_columns_list, column_heads_only=True) ## print ou
 #           Train and Eval             #
 ########################################
 
-def main():
+def train_model():
     # Initializing constants for the whole run.
     net_ema = None ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
                    ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
@@ -722,15 +723,9 @@ def get_filenames(directory):
     return filenames
 
 
-if __name__ == "__main__":
-    # Enable larger convolutional kernel sizes
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--multiplier_kernel_size', type=int, default=1)
-    hparams = parser.parse_args()
-    default_conv_kwargs['kernel_size'] *= hparams.multiplier_kernel_size
-
-    ma, _ = main()
-    mb, _ = main()
+def rebasin():
+    ma, _ = train_model()
+    mb, _ = train_model()
     mbo = copy.deepcopy(mb)
 
     os.makedirs('models', exist_ok=True)
@@ -837,3 +832,30 @@ if __name__ == "__main__":
     df_accs = pd.DataFrame(accs)
     df_losses.to_csv(f"results/{ks}x{ks}-losses.csv")
     df_accs.to_csv(f"results/{ks}x{ks}-accuracies.csv")
+
+
+def draw():
+    kernel_size = default_conv_kwargs['kernel_size']
+    net = make_net()
+    batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+    draw_graph(net, batch).visual_graph.render(
+        f"results/hlb-cifar10-{kernel_size}x{kernel_size}"
+    )
+
+
+def main():
+    # Enable larger convolutional kernel sizes
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--multiplier_kernel_size', type=int, default=1)
+    parser.add_argument('-d', '--draw', action='store_true', default=False)
+    hparams = parser.parse_args()
+    default_conv_kwargs['kernel_size'] *= hparams.multiplier_kernel_size
+
+    if hparams.draw:
+        draw()
+    else:
+        rebasin()
+
+
+if __name__ == '__main__':
+    main()
