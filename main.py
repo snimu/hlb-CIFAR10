@@ -14,6 +14,7 @@ from functools import partial
 import math
 import os
 import copy
+from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
@@ -777,7 +778,9 @@ if __name__ == "__main__":
 
     print("a-b-rebasin")
     losses_a_b_rebasin, accs_a_b_rebasin = [], []
-    for name in filenames:
+    loop = tqdm(filenames)
+    for name in loop:
+        loop.set_description(name)
         working_model.load_state_dict(torch.load(f"models/lerp-a-b-rebasin/{name}"))
         loss, acc = eval_model(working_model, "cuda")
         losses_a_b_rebasin.append(loss)
@@ -786,7 +789,9 @@ if __name__ == "__main__":
     print("a-b-orig")
     losses_a_b_orig, accs_a_b_orig = [], []
     filenames = next(os.walk("models/lerp-a-b-orig"))[2]
-    for name in filenames:
+    loop = tqdm(filenames)
+    for name in loop:
+        loop.set_description(name)
         working_model.load_state_dict(torch.load(f"models/lerp-a-b-orig/{name}"))
         loss, acc = eval_model(working_model, "cuda")
         losses_a_b_orig.append(loss)
@@ -795,7 +800,9 @@ if __name__ == "__main__":
     print("b-orig-b-rebasin")
     losses_b_orig_b_rebasin, accs_b_orig_b_rebasin = [], []
     filenames = next(os.walk("models/lerp-b-orig-b-rebasin"))[2]
-    for name in filenames:
+    loop = tqdm(filenames)
+    for name in loop:
+        loop.set_description(name)
         working_model.load_state_dict(torch.load(f"models/lerp-b-orig-b-rebasin/{name}"))
         loss, acc = eval_model(working_model, "cuda")
         losses_b_orig_b_rebasin.append(loss)
