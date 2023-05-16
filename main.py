@@ -774,10 +774,12 @@ if __name__ == "__main__":
     working_model = copy.deepcopy(ma)
     del ma
 
-    filenames = next(os.walk("models/lerp-a-b-rebasin"))[2]
+    key = lambda x: float(x[-8:-3])
 
     print("a-b-rebasin")
     losses_a_b_rebasin, accs_a_b_rebasin = [], []
+    filenames = next(os.walk("models/lerp-a-b-rebasin"))[2]
+    filenames.sort(key=key)
     loop = tqdm(filenames)
     for name in loop:
         loop.set_description(name)
@@ -789,6 +791,7 @@ if __name__ == "__main__":
     print("a-b-orig")
     losses_a_b_orig, accs_a_b_orig = [], []
     filenames = next(os.walk("models/lerp-a-b-orig"))[2]
+    filenames.sort(key=key)
     loop = tqdm(filenames)
     for name in loop:
         loop.set_description(name)
@@ -800,6 +803,7 @@ if __name__ == "__main__":
     print("b-orig-b-rebasin")
     losses_b_orig_b_rebasin, accs_b_orig_b_rebasin = [], []
     filenames = next(os.walk("models/lerp-b-orig-b-rebasin"))[2]
+    filenames.sort(key=key)
     loop = tqdm(filenames)
     for name in loop:
         loop.set_description(name)
