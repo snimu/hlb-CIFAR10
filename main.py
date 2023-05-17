@@ -843,16 +843,25 @@ def draw():
     )
 
 
+def print_model():
+    net = make_net()
+    pcd = rebasin.PermutationCoordinateDescent(net, net, torch.randn(1, 3, 224, 224))
+    print(pcd.pinit.model_graph)
+
+
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--multiplier_kernel_size', type=int, default=1)
     parser.add_argument('-d', '--draw', action='store_true', default=False)
+    parser.add_argument("-p", "--print", action="store_true", default=False)
     hparams = parser.parse_args()
     default_conv_kwargs['kernel_size'] *= hparams.multiplier_kernel_size
 
     if hparams.draw:
         draw()
+    elif hparams.print:
+        print_model()
     else:
         rebasin_model()
 
