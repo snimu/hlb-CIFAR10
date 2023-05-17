@@ -845,7 +845,8 @@ def draw():
 
 def print_model():
     net = make_net()
-    pcd = rebasin.PermutationCoordinateDescent(net, net, torch.randn(1, 3, 224, 224))
+    batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+    pcd = rebasin.PermutationCoordinateDescent(net, net, batch)
     print(pcd.pinit.model_graph)
 
 
