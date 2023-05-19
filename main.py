@@ -867,7 +867,9 @@ def merge_many_models(model_count: int) -> None:
     batch, _ = next(get_batches(data, key='eval', batchsize=2500))
     working_model = make_net()
 
-    merger = rebasin.MergeMany(models, working_model, batch, logging_level="info")
+    merger = rebasin.MergeMany(
+        models, working_model, batch, device="cuda", logging_level="info"
+    )
     merger.run()
 
     print("Evaluate Merged Model...")
