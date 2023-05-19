@@ -736,7 +736,7 @@ def rebasin_model():
     batch, _ = next(get_batches(data, key='eval', batchsize=2500))
     batch = batch.to("cuda")
     pcd = rebasin.PermutationCoordinateDescent(
-        ma, mb, batch, verbose=True, device_a="cuda", device_b="cuda"
+        ma, mb, batch, logging_level="info", device_a="cuda", device_b="cuda"
     )
     pcd.rebasin()
 
@@ -748,7 +748,7 @@ def rebasin_model():
     interp = rebasin.interpolation.LerpSimple(
         [ma, mb], eval_fn,
         devices=["cuda", "cuda"],
-        save_all=True, savedir="models/lerp-a-b-rebasin", verbose=True
+        savedir="models/lerp-a-b-rebasin", logging_level="info"
     )
     interp.interpolate(steps=99)
 
@@ -757,7 +757,7 @@ def rebasin_model():
     interp = rebasin.interpolation.LerpSimple(
         [ma, mbo], eval_fn,
         devices=["cuda", "cuda"],
-        save_all=True, savedir="models/lerp-a-b-orig", verbose=True
+        savedir="models/lerp-a-b-orig", logging_level="info"
     )
     interp.interpolate(steps=99)
 
@@ -766,7 +766,7 @@ def rebasin_model():
     interp = rebasin.interpolation.LerpSimple(
         [mbo, mb], eval_fn,
         devices=["cuda", "cuda"],
-        save_all=True, savedir="models/lerp-b-orig-b-rebasin", verbose=True
+        savedir="models/lerp-b-orig-b-rebasin", logging_level="info"
     )
     interp.interpolate(steps=99)
 
@@ -850,19 +850,53 @@ def print_model():
     print(pcd.pinit.model_graph)
 
 
+def merge_many_models(model_count: int) -> None:
+    print(f"Train {model_count} Models...")
+    models = []
+    for _ in tqdm(range(model_count)):
+        m, _ = train_model()
+        models.append(m)
+
+    print("Evaluate Models...")
+    results = []
+    for i, m in tqdm(enumerate(models)):
+        loss, acc = eval_model(m, "cuda")
+        results.append(f"Model {i}: Loss: {loss}, Acc: {acc}")
+
+    print("Merge Models...")
+    batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+    working_model = make_net()
+
+    merger = rebasin.MergeMany(models, working_model, batch, logging_level="info")
+    merger.run()
+
+    print("Evaluate Merged Model...")
+    loss, acc = eval_model(merger.merged_model, "cuda")
+    results.append(f"Merged Model: Loss: {loss}, Acc: {acc}")
+
+    print("Save Results...")
+    os.makedirs("results", exist_ok=True)
+    with open(f"results/merge_{model_count}.txt", "w") as f:
+        f.write("\n".join(results))
+
+
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--multiplier_kernel_size', type=int, default=1)
+    parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=1)
     parser.add_argument('-d', '--draw', action='store_true', default=False)
     parser.add_argument("-p", "--print", action="store_true", default=False)
+    parser.add_argument("-m", "--merge_many", action="store_true", default=False)
+    parser.add_argument("-c", "--model_count", type=int, default=3)
     hparams = parser.parse_args()
-    default_conv_kwargs['kernel_size'] *= hparams.multiplier_kernel_size
+    default_conv_kwargs['kernel_size'] *= hparams.kernel_size_multiplier
 
     if hparams.draw:
         draw()
     elif hparams.print:
         print_model()
+    elif hparams.merge_many:
+        merge_many_models(hparams.model_count)
     else:
         rebasin_model()
 
