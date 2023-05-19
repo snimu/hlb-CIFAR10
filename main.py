@@ -850,57 +850,63 @@ def print_model():
     print(pcd.pinit.model_graph)
 
 
-def merge_many_models(model_count: int) -> None:
-    print(f"Train {model_count} Models...")
-    models = []
-    for _ in tqdm(range(model_count)):
-        m, _ = train_model()
-        models.append(m)
+def merge_many_models(model_counts: list[int]) -> None:
+    for model_count in model_counts:
+        print(f"Train {model_count} Models...")
+        models = []
+        for _ in tqdm(range(model_count)):
+            m, _ = train_model()
+            models.append(m)
 
-    print("Evaluate Models...")
-    results = []
-    for i, m in tqdm(enumerate(models)):
-        loss, acc = eval_model(m, "cuda")
-        results.append(f"Model {i}: Loss: {loss}, Acc: {acc}")
+        print("Evaluate Models...")
+        results = []
+        for i, m in tqdm(enumerate(models)):
+            loss, acc = eval_model(m, "cuda")
+            results.append(f"Model {i}: Loss: {loss}, Acc: {acc}")
 
-    print("Merge Models...")
-    batch, _ = next(get_batches(data, key='eval', batchsize=2500))
-    working_model = make_net()
+        print("Merge Models...")
+        batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+        working_model = make_net()
 
-    merger = rebasin.MergeMany(
-        models, working_model, batch, device="cuda", logging_level="info"
-    )
-    merger.run()
+        merger = rebasin.MergeMany(
+            models, working_model, batch, device="cuda", logging_level="info"
+        )
+        merger.run()
 
-    print("Evaluate Merged Model...")
-    loss, acc = eval_model(merger.merged_model, "cuda")
-    results.append(f"Merged Model: Loss: {loss}, Acc: {acc}")
+        print("Evaluate Merged Model...")
+        loss, acc = eval_model(merger.merged_model, "cuda")
+        results.append(f"Merged Model: Loss: {loss}, Acc: {acc}")
 
-    print("Save Results...")
-    os.makedirs("results", exist_ok=True)
-    with open(f"results/merge_{model_count}.txt", "w") as f:
-        f.write("\n".join(results))
+        print("Save Results...")
+        ksize = default_conv_kwargs['kernel_size']
+        os.makedirs("results", exist_ok=True)
+        with open(f"results/merge_{model_count}_{ksize}x{ksize}.txt", "w") as f:
+            f.write("\n".join(results))
 
 
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
-    parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=1)
+    parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=[1], nargs="*")
     parser.add_argument('-d', '--draw', action='store_true', default=False)
     parser.add_argument("-p", "--print", action="store_true", default=False)
     parser.add_argument("-m", "--merge_many", action="store_true", default=False)
-    parser.add_argument("-c", "--model_count", type=int, default=3)
+    parser.add_argument("-c", "--model_count", type=int, default=[3], nargs="*")
     hparams = parser.parse_args()
-    default_conv_kwargs['kernel_size'] *= hparams.kernel_size_multiplier
 
-    if hparams.draw:
-        draw()
-    elif hparams.print:
-        print_model()
-    elif hparams.merge_many:
-        merge_many_models(hparams.model_count)
-    else:
-        rebasin_model()
+    ksize_orig = default_conv_kwargs['kernel_size']
+
+    for ksize_mult in hparams.kernel_size_multiplier:
+        default_conv_kwargs['kernel_size'] = ksize_orig * ksize_mult
+
+        if hparams.draw:
+            draw()
+        elif hparams.print:
+            print_model()
+        elif hparams.merge_many:
+            merge_many_models(hparams.model_count)
+        else:
+            rebasin_model()
 
 
 if __name__ == '__main__':
