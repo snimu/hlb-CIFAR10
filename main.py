@@ -8,6 +8,8 @@ try:
 except NameError:
   pass ## we're still good
 """
+from __future__ import annotations
+
 import argparse
 import functools
 from functools import partial
