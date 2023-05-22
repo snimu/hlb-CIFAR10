@@ -887,10 +887,8 @@ def merge_many_models(model_counts: list[int]) -> None:
 
 
 def train_merge_train(model_counts: list[int]):
-
-    result = ""
-
     for model_count in model_counts:
+        result = ""
         hyp['misc']['train_epochs'] //= 2
         hyp['misc']['ema']['epochs'] //= 2
 
