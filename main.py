@@ -889,8 +889,8 @@ def merge_many_models(model_counts: list[int]) -> None:
 def train_merge_train(model_counts: list[int]):
     for model_count in model_counts:
         result = ""
-        hyp['misc']['train_epochs'] //= 2
-        hyp['misc']['ema']['epochs'] //= 2
+        hyp['misc']['train_epochs'] = 5
+        hyp['misc']['ema']['epochs'] = 2
 
         print(f"Train {model_count} Models...")
         models = []
@@ -915,8 +915,8 @@ def train_merge_train(model_counts: list[int]):
         loss, acc = eval_model(model, "cuda")
         result += f"Model Count: {model_count}, Loss: {loss}, Acc: {acc}\n"
 
-        hyp['misc']['train_epochs'] *= 2
-        hyp['misc']['ema']['epochs'] *= 2
+        hyp['misc']['train_epochs'] = 10
+        hyp['misc']['ema']['epochs'] = 7
 
         print("Train comparison model...")
         model, _ = train_model()
