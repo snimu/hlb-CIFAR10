@@ -533,7 +533,7 @@ print_training_details(logging_columns_list, column_heads_only=True) ## print ou
 #           Train and Eval             #
 ########################################
 
-def train_model():
+def train_model(model=None):
     # Initializing constants for the whole run.
     net_ema = None ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
                    ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
@@ -555,7 +555,7 @@ def train_model():
     pct_start = hyp['opt']['percent_start'] #* (total_train_steps/(total_train_steps - num_low_lr_steps_for_ema))
 
     # Get network
-    net = make_net()
+    net = make_net() if model is None else model
 
     ## Stowing the creation of these into a helper function to make things a bit more readable....
     non_bias_params, bias_params = init_split_parameter_dictionaries(net)
@@ -886,6 +886,57 @@ def merge_many_models(model_counts: list[int]) -> None:
             f.write("\n".join(results))
 
 
+def train_merge_train(model_counts: list[int]):
+
+    result = ""
+
+    for model_count in model_counts:
+        hyp['misc']['train_epochs'] /= 2
+        hyp['misc']['ema']['epochs'] /= 2
+
+        print(f"Train {model_count} Models...")
+        models = []
+        for _ in tqdm(range(model_count)):
+            m, _ = train_model()
+            models.append(m)
+
+        hyp['misc']['train_epochs'] *= 2
+        hyp['misc']['ema']['epochs'] *= 2
+
+        print("Merge Models...")
+        batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+        working_model = make_net()
+
+        merger = rebasin.MergeMany(
+            models, working_model, batch, device="cuda", logging_level="info"
+        )
+        merger.run()
+        del models
+
+        print("Train Merged Model...")
+        model, _ = train_model(merger.merged_model)
+
+        print("Evaluate Merged Model...")
+        loss, acc = eval_model(model, "cuda")
+        result += f"Model Count: {model_count}, Loss: {loss}, Acc: {acc}\n"
+
+        hyp['misc']['train_epochs'] *= 2
+        hyp['misc']['ema']['epochs'] *= 2
+
+        print("Train comparison model...")
+        model, _ = train_model()
+
+        print("Evaluate comparison model...")
+        loss, acc = eval_model(model, "cuda")
+        result += f"Comparison Model: Loss: {loss}, Acc: {acc}\n"
+
+        print("Save Results...")
+        ksize = default_conv_kwargs['kernel_size']
+        os.makedirs("results", exist_ok=True)
+        with open(f"results/merge_train_{model_count}_{ksize}x{ksize}.txt", "w") as f:
+            f.write(result)
+
+
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
@@ -894,6 +945,7 @@ def main():
     parser.add_argument("-p", "--print", action="store_true", default=False)
     parser.add_argument("-m", "--merge_many", action="store_true", default=False)
     parser.add_argument("-c", "--model_count", type=int, default=[3], nargs="*")
+    parser.add_argument("-t", "--train_merge_train", action="store_true", default=False)
     hparams = parser.parse_args()
 
     ksize_orig = default_conv_kwargs['kernel_size']
@@ -905,6 +957,8 @@ def main():
             draw()
         elif hparams.print:
             print_model()
+        elif hparams.train_merge_train:
+            train_merge_train(hparams.model_count)
         elif hparams.merge_many:
             merge_many_models(hparams.model_count)
         else:
