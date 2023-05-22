@@ -891,17 +891,14 @@ def train_merge_train(model_counts: list[int]):
     result = ""
 
     for model_count in model_counts:
-        hyp['misc']['train_epochs'] /= 2
-        hyp['misc']['ema']['epochs'] /= 2
+        hyp['misc']['train_epochs'] //= 2
+        hyp['misc']['ema']['epochs'] //= 2
 
         print(f"Train {model_count} Models...")
         models = []
         for _ in tqdm(range(model_count)):
             m, _ = train_model()
             models.append(m)
-
-        hyp['misc']['train_epochs'] *= 2
-        hyp['misc']['ema']['epochs'] *= 2
 
         print("Merge Models...")
         batch, _ = next(get_batches(data, key='eval', batchsize=2500))
