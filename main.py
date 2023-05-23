@@ -466,9 +466,9 @@ class NetworkEMA(nn.Module):
 
 # TODO: Could we jit this in the (more distant) future? :)
 @torch.no_grad()
-def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None):
-    num_epoch_examples = len(data_dict[key]['images'])
-    shuffled = torch.randperm(num_epoch_examples, device='cuda')
+def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, dataset_slice=slice(0.0, 1.0)):
+    num_epoch_examples = len(data_dict[key]['images']) * (dataset_slice.stop - dataset_slice.start)
+    shuffled = torch.randperm(num_epoch_examples, device='cuda') + dataset_slice.start
     if epoch_fraction < 1:
         shuffled = shuffled[:batchsize * round(epoch_fraction * shuffled.shape[0]/batchsize)] # TODO: Might be slightly inaccurate, let's fix this later... :) :D :confetti: :fireworks:
         num_epoch_examples = shuffled.shape[0]
@@ -533,7 +533,7 @@ print_training_details(logging_columns_list, column_heads_only=True) ## print ou
 #           Train and Eval             #
 ########################################
 
-def train_model(model=None):
+def train_model(model=None, dataset_slice=slice(0, 1)):
     # Initializing constants for the whole run.
     net_ema = None ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
                    ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
@@ -591,7 +591,7 @@ def train_model(model=None):
           cutmix_size = hyp['net']['cutmix_size'] if epoch >= hyp['misc']['train_epochs'] - hyp['net']['cutmix_epochs'] else 0
           epoch_fraction = 1 if epoch + 1 < hyp['misc']['train_epochs'] else hyp['misc']['train_epochs'] % 1 # We need to know if we're running a partial epoch or not.
 
-          for epoch_step, (inputs, targets) in enumerate(get_batches(data, key='train', batchsize=batchsize, epoch_fraction=epoch_fraction, cutmix_size=cutmix_size)):
+          for epoch_step, (inputs, targets) in enumerate(get_batches(data, key='train', batchsize=batchsize, epoch_fraction=epoch_fraction, cutmix_size=cutmix_size, dataset_slice=dataset_slice)):
               ## Run everything through the network
               outputs = net(inputs)
 
@@ -932,16 +932,89 @@ def train_merge_train(model_counts: list[int]):
             f.write(result)
 
 
+def train_on_different_data_then_merge(model_counts: list[int]):
+    """
+    Train a number of models on different data, then
+    merge them together.
+    Finally, train the merged model on the remaining data.
+    Compare that to training a single model on only the remaining data,
+    but for an equivalent number of epochs.
+    """
+    for model_count in model_counts:
+        models = []
+
+        # Split data & train models
+        num_datasets = model_count + 1
+        dataset_size = len(data['train']) // num_datasets
+        for i in range(model_count):
+            dataset_slice = slice(i * dataset_size, (i + 1) * dataset_size)
+            m, acc = train_model(dataset_slice=dataset_slice)
+            models.append(m)
+
+        # Evaluate models (before merging! Merging changes models in-place!)
+        results = []
+        for i, m in tqdm(enumerate(models)):
+            loss, acc = eval_model(m, "cuda")
+            results.append(f"Model {i}: Loss: {loss}, Acc: {acc}")
+
+        # Merge models
+        batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+        working_model = make_net()
+
+        merger = rebasin.MergeMany(
+            models, working_model, batch, device="cuda", logging_level="info"
+        )
+        merger.run()
+
+        # Retrain merged model
+        merged_model, _ = train_model(
+            model=merger.merged_model,
+            dataset_slice=slice(model_count * dataset_size, len(data['train']))
+        )
+
+        # Evaluate merged model
+        loss, acc = eval_model(merged_model, "cuda")
+        results.append(f"Merged Model: Loss: {loss}, Acc: {acc}")
+
+        # Train & evaluate control model
+        model, _ = train_model(
+            dataset_slice=slice(model_count * dataset_size, len(data['train']))
+        )
+        loss, acc = eval_model(model, "cuda")
+        results.append(f"Control Model (1): Loss: {loss}, Acc: {acc}")
+
+        # Again, after more epochs
+        for i in range(1, model_count):
+            model, _ = train_model(
+                model=model,
+                dataset_slice=slice(model_count * dataset_size, len(data['train']))
+            )
+            loss, acc = eval_model(model, "cuda")
+            results.append(f"Control Model ({i+1}): Loss: {loss}, Acc: {acc}")
+
+        # Save results
+        ksize = default_conv_kwargs['kernel_size']
+        os.makedirs("results", exist_ok=True)
+        with open(f"results/merge_train_{model_count}_{ksize}x{ksize}.txt", "w") as f:
+            f.write("\n".join(results))
+
+
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=[1], nargs="*")
+    parser.add_argument('-e', '--epochs', type=int, default=None)
     parser.add_argument('-d', '--draw', action='store_true', default=False)
     parser.add_argument("-p", "--print", action="store_true", default=False)
     parser.add_argument("-m", "--merge_many", action="store_true", default=False)
     parser.add_argument("-c", "--model_count", type=int, default=[3], nargs="*")
     parser.add_argument("-t", "--train_merge_train", action="store_true", default=False)
+    parser.add_argument("-s", "--train_different_datasets", action="store_true", default=False)
     hparams = parser.parse_args()
+
+    if hparams.epochs is not None:
+        hyp['misc']['train_epochs'] = hparams.epochs
+        hyp['misc']['ema']['epochs'] = hparams.epochs - 3
 
     ksize_orig = default_conv_kwargs['kernel_size']
 
@@ -956,6 +1029,8 @@ def main():
             train_merge_train(hparams.model_count)
         elif hparams.merge_many:
             merge_many_models(hparams.model_count)
+        elif hparams.train_different_datasets:
+            train_on_different_data_then_merge(hparams.model_count)
         else:
             rebasin_model()
 
