@@ -466,9 +466,11 @@ class NetworkEMA(nn.Module):
 
 # TODO: Could we jit this in the (more distant) future? :)
 @torch.no_grad()
-def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, dataset_slice=slice(0.0, 1.0)):
-    num_epoch_examples = len(data_dict[key]['images']) * (dataset_slice.stop - dataset_slice.start)
-    shuffled = torch.randperm(num_epoch_examples, device='cuda') + dataset_slice.start
+def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, dataset_slice=None):
+    num_epoch_examples = len(data_dict[key]['images']) if dataset_slice is None else dataset_slice.stop - dataset_slice.start
+    shuffled = torch.randperm(num_epoch_examples, device='cuda')
+    if dataset_slice is not None:
+        shuffled += int(dataset_slice.start)
     if epoch_fraction < 1:
         shuffled = shuffled[:batchsize * round(epoch_fraction * shuffled.shape[0]/batchsize)] # TODO: Might be slightly inaccurate, let's fix this later... :) :D :confetti: :fireworks:
         num_epoch_examples = shuffled.shape[0]
