@@ -934,6 +934,16 @@ def train_merge_train(model_counts: list[int]):
             f.write(result)
 
 
+def test_dataset_slice():
+    dataset_size = 1000
+    dataset_slice = slice(0, dataset_size)
+    batchsize = 100
+    batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
+    assert len(list(batches)) == dataset_size  # // batchsize?
+    for batch, _ in batches:
+        assert len(batch) == batchsize
+
+
 def train_on_different_data_then_merge(model_counts: list[int]):
     """
     Train a number of models on different data, then
@@ -942,6 +952,7 @@ def train_on_different_data_then_merge(model_counts: list[int]):
     Compare that to training a single model on only the remaining data,
     but for an equivalent number of epochs.
     """
+    test_dataset_slice()
     for model_count in model_counts:
         models = []
 
