@@ -965,11 +965,8 @@ def train_on_different_data_then_merge(model_counts: list[int]):
         # Split data & train models
         num_datasets = model_count + 1
         dataset_size = len(data['train']['images']) // num_datasets
-        print(f"{batchsize=}")
-        print(f"{dataset_size=}")
         for i in range(model_count):
             dataset_slice = slice(i * dataset_size, (i + 1) * dataset_size)
-            print(f"{dataset_slice=}")
             m, acc = train_model(dataset_slice=dataset_slice)
             models.append(m)
 
