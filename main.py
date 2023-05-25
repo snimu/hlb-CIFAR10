@@ -486,6 +486,7 @@ def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, 
     if key == 'train':
         images = batch_crop(data_dict[key]['images'], crop_size) # TODO: hardcoded image size for now?
         images = batch_flip_lr(images)
+        print(images)
         images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size)
     else:
         images = data_dict[key]['images']
@@ -943,8 +944,8 @@ def test_dataset_slice():
     dataset_size = 1000
     dataset_slice = slice(0, dataset_size)
     batchsize = 100
-    batches = get_batches(data, key="train", batchsize=batchsize)  # Check without dataset_slice
-    # batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
+    # batches = get_batches(data, key="train", batchsize=batchsize)  # Check without dataset_slice
+    batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
 
     count = 0
     for batch, _ in batches:
