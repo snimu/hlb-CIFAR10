@@ -475,10 +475,6 @@ def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, 
     if dataset_slice is not None:
         shuffled += int(dataset_slice.start)
 
-    print(f"{dataset_slice=}")
-    print(f"Shuffled: {shuffled.shape=}, {shuffled.min()=}, {shuffled.max()=}")
-    print(f"{epoch_fraction=}")
-    print(f"{batchsize=}")
     if epoch_fraction < 1:
         shuffled = shuffled[:batchsize * round(epoch_fraction * shuffled.shape[0]/batchsize)] # TODO: Might be slightly inaccurate, let's fix this later... :) :D :confetti: :fireworks:
         num_epoch_examples = shuffled.shape[0]
@@ -946,8 +942,7 @@ def test_dataset_slice():
     dataset_size = 1000
     dataset_slice = slice(0, dataset_size)
     batchsize = 100
-    # batches = get_batches(data, key="train", batchsize=batchsize)  # Check without dataset_slice
-    batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
+    batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice, cutmix_size=1)
 
     count = 0
     for batch, _ in batches:
