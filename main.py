@@ -1023,7 +1023,7 @@ def train_on_different_data_then_merge(model_counts: list[int]):
         ksize = default_conv_kwargs['kernel_size']
         epochs = hyp['misc']['train_epochs']
         os.makedirs("results", exist_ok=True)
-        with open(f"results/merge_train_{model_count}models_{epochs}epochs_{ksize}x{ksize}.txt", "w") as f:
+        with open(f"results/merge_many_different_datasets_{model_count}models_{epochs}epochs_{ksize}x{ksize}.txt", "w") as f:
             f.write("\n".join(results))
 
 
