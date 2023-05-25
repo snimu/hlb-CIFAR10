@@ -1031,7 +1031,7 @@ def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=[1], nargs="*")
-    parser.add_argument('-e', '--epochs', type=int, default=None)
+    parser.add_argument('-e', '--epochs', type=int, default=hyp['misc']['train_epochs'], nargs="*")
     parser.add_argument('-d', '--draw', action='store_true', default=False)
     parser.add_argument("-p", "--print", action="store_true", default=False)
     parser.add_argument("-m", "--merge_many", action="store_true", default=False)
@@ -1040,27 +1040,28 @@ def main():
     parser.add_argument("-s", "--train_different_datasets", action="store_true", default=False)
     hparams = parser.parse_args()
 
-    if hparams.epochs is not None:
-        hyp['misc']['train_epochs'] = hparams.epochs
-        hyp['misc']['ema']['epochs'] = hparams.epochs - 3
-
     ksize_orig = default_conv_kwargs['kernel_size']
 
-    for ksize_mult in hparams.kernel_size_multiplier:
-        default_conv_kwargs['kernel_size'] = ksize_orig * ksize_mult
+    for epochs in hparams.epochs:
+        hyp['misc']['train_epochs'] = epochs
+        hyp['misc']['ema']['epochs'] = int(epochs - 3)
 
-        if hparams.draw:
-            draw()
-        elif hparams.print:
-            print_model()
-        elif hparams.train_merge_train:
-            train_merge_train(hparams.model_count)
-        elif hparams.merge_many:
-            merge_many_models(hparams.model_count)
-        elif hparams.train_different_datasets:
-            train_on_different_data_then_merge(hparams.model_count)
-        else:
-            rebasin_model()
+
+        for ksize_mult in hparams.kernel_size_multiplier:
+            default_conv_kwargs['kernel_size'] = ksize_orig * ksize_mult
+
+            if hparams.draw:
+                draw()
+            elif hparams.print:
+                print_model()
+            elif hparams.train_merge_train:
+                train_merge_train(hparams.model_count)
+            elif hparams.merge_many:
+                merge_many_models(hparams.model_count)
+            elif hparams.train_different_datasets:
+                train_on_different_data_then_merge(hparams.model_count)
+            else:
+                rebasin_model()
 
 
 if __name__ == '__main__':
