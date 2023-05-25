@@ -991,7 +991,7 @@ def train_on_different_data_then_merge(model_counts: list[int]):
         # Retrain merged model
         merged_model, _ = train_model(
             model=merger.merged_model,
-            dataset_slice=slice(model_count * dataset_size, len(data['train']))
+            dataset_slice=slice(model_count * dataset_size, len(data['train']['images']))
         )
 
         # Evaluate merged model
@@ -1000,7 +1000,7 @@ def train_on_different_data_then_merge(model_counts: list[int]):
 
         # Train & evaluate control model
         model, _ = train_model(
-            dataset_slice=slice(model_count * dataset_size, len(data['train']))
+            dataset_slice=slice(model_count * dataset_size, len(data['train']['images']))
         )
         loss, acc = eval_model(model, "cuda")
         results.append(f"Control Model (1): Loss: {loss}, Acc: {acc}")
@@ -1009,7 +1009,7 @@ def train_on_different_data_then_merge(model_counts: list[int]):
         for i in range(1, model_count):
             model, _ = train_model(
                 model=model,
-                dataset_slice=slice(model_count * dataset_size, len(data['train']))
+                dataset_slice=slice(model_count * dataset_size, len(data['train']['images']))
             )
             loss, acc = eval_model(model, "cuda")
             results.append(f"Control Model ({i+1}): Loss: {loss}, Acc: {acc}")
