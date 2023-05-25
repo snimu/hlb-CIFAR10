@@ -397,6 +397,9 @@ def make_random_square_masks(inputs, mask_size):
     ##### TODO: Double check that this properly covers the whole range of values. :'( :')
     if mask_size == 0:
         return None # no need to cutout or do anything like that since the patch_size is set to 0
+
+    print(mask_size)
+
     is_even = int(mask_size % 2 == 0)
     in_shape = inputs.shape
 
@@ -486,7 +489,6 @@ def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, 
     if key == 'train':
         images = batch_crop(data_dict[key]['images'], crop_size) # TODO: hardcoded image size for now?
         images = batch_flip_lr(images)
-        print(images)
         images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size)
     else:
         images = data_dict[key]['images']
