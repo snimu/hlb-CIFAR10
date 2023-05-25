@@ -1003,7 +1003,7 @@ def train_on_different_data_then_merge(model_counts: list[int]):
         results.append(f"Control Model (1): Loss: {loss}, Acc: {acc}")
 
         # Again, after more epochs
-        for i in range(1, model_count):
+        for i in range(1, model_count + 1):  # All models that are merged, plus training of merged model
             model, _ = train_model(
                 model=model,
                 dataset_slice=slice(model_count * dataset_size, len(data['train']['images']))
