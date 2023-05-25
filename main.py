@@ -939,9 +939,13 @@ def test_dataset_slice():
     dataset_slice = slice(0, dataset_size)
     batchsize = 100
     batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
-    assert len(list(batches)) == dataset_size  # // batchsize?
+
+    count = 0
     for batch, _ in batches:
         assert len(batch) == batchsize
+        count += 1
+
+    assert count == dataset_size // batchsize
 
 
 def train_on_different_data_then_merge(model_counts: list[int]):
