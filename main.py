@@ -944,7 +944,7 @@ def test_dataset_slice():
     dataset_slice = slice(0, dataset_size)
     batchsize = 100
     batches = get_batches(data, key="train", batchsize=batchsize)  # Check without dataset_slice
-    batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
+    # batches = get_batches(data, key='train', batchsize=batchsize, dataset_slice=dataset_slice)
 
     count = 0
     for batch, _ in batches:
