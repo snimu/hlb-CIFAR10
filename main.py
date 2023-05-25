@@ -972,9 +972,17 @@ def train_on_different_data_then_merge(model_counts: list[int]):
 
         # Evaluate models (before merging! Merging changes models in-place!)
         results = []
+        avg_loss = 0.0
+        avg_acc = 0.0
         for i, m in tqdm(enumerate(models)):
             loss, acc = eval_model(m, "cuda")
+            avg_loss += loss
+            avg_acc += acc
             results.append(f"Model {i}: Loss: {loss}, Acc: {acc}")
+
+        avg_loss /= len(models)
+        avg_acc /= len(models)
+        results.append(f"Average Model: Loss: {avg_loss}, Acc: {avg_acc}")
 
         # Merge models
         batch, _ = next(get_batches(data, key='eval', batchsize=2500))
