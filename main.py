@@ -398,7 +398,7 @@ def make_random_square_masks(inputs, mask_size):
     if mask_size == 0:
         return None # no need to cutout or do anything like that since the patch_size is set to 0
 
-    print(mask_size)
+    print(f"{mask_size=}")
 
     is_even = int(mask_size % 2 == 0)
     in_shape = inputs.shape
