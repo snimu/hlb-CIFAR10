@@ -1040,7 +1040,7 @@ def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=[1], nargs="*")
-    parser.add_argument('-e', '--epochs', type=int, default=hyp['misc']['train_epochs'], nargs="*")
+    parser.add_argument('-e', '--epochs', type=int, default=[hyp['misc']['train_epochs']], nargs="*")
     parser.add_argument('-d', '--draw', action='store_true', default=False)
     parser.add_argument("-p", "--print", action="store_true", default=False)
     parser.add_argument("-m", "--merge_many", action="store_true", default=False)
