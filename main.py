@@ -537,7 +537,7 @@ print_training_details(logging_columns_list, column_heads_only=True) ## print ou
 #           Train and Eval             #
 ########################################
 
-def train_model(model=None, dataset_slice=slice(0, 1)):
+def train_model(model=None, dataset_slice=None):
     # Initializing constants for the whole run.
     net_ema = None ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
                    ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
@@ -594,7 +594,6 @@ def train_model(model=None, dataset_slice=slice(0, 1)):
 
           cutmix_size = hyp['net']['cutmix_size'] if epoch >= hyp['misc']['train_epochs'] - hyp['net']['cutmix_epochs'] else 0
           epoch_fraction = 1 if epoch + 1 < hyp['misc']['train_epochs'] else hyp['misc']['train_epochs'] % 1 # We need to know if we're running a partial epoch or not.
-          print("hi")
           for epoch_step, (inputs, targets) in enumerate(get_batches(data, key='train', batchsize=batchsize, epoch_fraction=epoch_fraction, cutmix_size=cutmix_size, dataset_slice=dataset_slice)):
               ## Run everything through the network
               outputs = net(inputs)
