@@ -596,6 +596,7 @@ def train_model(model=None, dataset_slice=slice(0, 1)):
           epoch_fraction = 1 if epoch + 1 < hyp['misc']['train_epochs'] else hyp['misc']['train_epochs'] % 1 # We need to know if we're running a partial epoch or not.
 
           for epoch_step, (inputs, targets) in enumerate(get_batches(data, key='train', batchsize=batchsize, epoch_fraction=epoch_fraction, cutmix_size=cutmix_size, dataset_slice=dataset_slice)):
+              print("hi")
               ## Run everything through the network
               outputs = net(inputs)
 
