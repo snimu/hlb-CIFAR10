@@ -728,7 +728,7 @@ def get_filenames(directory):
     return filenames
 
 
-def rebasin_model():
+def rebasin_model(weight_decay: float | None) -> None:
     ma, _ = train_model()
     mb, _ = train_model()
     mbo = copy.deepcopy(mb)
@@ -835,8 +835,12 @@ def rebasin_model():
     os.makedirs("results", exist_ok=True)
     df_losses = pd.DataFrame(losses)
     df_accs = pd.DataFrame(accs)
-    df_losses.to_csv(f"results/{ks}x{ks}-losses.csv")
-    df_accs.to_csv(f"results/{ks}x{ks}-accuracies.csv")
+    name_losses = f"results/{ks}x{ks}-losses"
+    name_losses += f"-wd{weight_decay}.csv" if weight_decay is not None else ".csv"
+    name_accs = f"results/{ks}x{ks}-accuracies"
+    name_accs += f"-wd{weight_decay}.csv" if weight_decay is not None else ".csv"
+    df_losses.to_csv(name_losses)
+    df_accs.to_csv(name_accs)
 
 
 def draw():
@@ -1073,7 +1077,7 @@ def main():
             elif hparams.train_different_datasets:
                 train_on_different_data_then_merge(hparams.model_count, hparams.weight_decay)
             else:
-                rebasin_model()
+                rebasin_model(hparams.weight_decay)
 
 
 if __name__ == '__main__':
