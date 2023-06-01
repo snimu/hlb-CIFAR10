@@ -594,9 +594,8 @@ def train_model(model=None, dataset_slice=slice(0, 1)):
 
           cutmix_size = hyp['net']['cutmix_size'] if epoch >= hyp['misc']['train_epochs'] - hyp['net']['cutmix_epochs'] else 0
           epoch_fraction = 1 if epoch + 1 < hyp['misc']['train_epochs'] else hyp['misc']['train_epochs'] % 1 # We need to know if we're running a partial epoch or not.
-
+          print("hi")
           for epoch_step, (inputs, targets) in enumerate(get_batches(data, key='train', batchsize=batchsize, epoch_fraction=epoch_fraction, cutmix_size=cutmix_size, dataset_slice=dataset_slice)):
-              print("hi")
               ## Run everything through the network
               outputs = net(inputs)
 
@@ -625,7 +624,7 @@ def train_model(model=None, dataset_slice=slice(0, 1)):
               opt_bias.zero_grad(set_to_none=True)
               current_steps += 1
 
-              if epoch >= ema_epoch_start and current_steps % hyp['misc']['ema']['every_n_steps'] == 0:          
+              if epoch >= ema_epoch_start and current_steps % hyp['misc']['ema']['every_n_steps'] == 0:
                   ## Initialize the ema from the network at this point in time if it does not already exist.... :D
                   if net_ema is None: # don't snapshot the network yet if so!
                       net_ema = NetworkEMA(net)
@@ -645,7 +644,7 @@ def train_model(model=None, dataset_slice=slice(0, 1)):
           eval_batchsize = 2500
           assert data['eval']['images'].shape[0] % eval_batchsize == 0, "Error: The eval batchsize must evenly divide the eval dataset (for now, we don't have drop_remainder implemented yet)."
           loss_list_val, acc_list, acc_list_ema = [], [], []
-          
+
           with torch.no_grad():
               for inputs, targets in get_batches(data, key='eval', batchsize=eval_batchsize):
                   if epoch >= ema_epoch_start:
@@ -654,7 +653,7 @@ def train_model(model=None, dataset_slice=slice(0, 1)):
                   outputs = net(inputs)
                   loss_list_val.append(loss_fn(outputs, targets).float().mean())
                   acc_list.append((outputs.argmax(-1) == targets.argmax(-1)).float().mean())
-                  
+
               val_acc = torch.stack(acc_list).mean().item()
               ema_val_acc = None
               # TODO: We can fuse these two operations (just above and below) all-together like :D :))))
