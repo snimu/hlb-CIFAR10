@@ -1057,6 +1057,7 @@ def main():
     ksize_orig = default_conv_kwargs['kernel_size']
 
     for epochs in hparams.epochs:
+        print(epochs)
         hyp['misc']['train_epochs'] = epochs
         hyp['misc']['ema']['epochs'] = int(epochs - 3)
 
