@@ -1057,9 +1057,8 @@ def main():
     ksize_orig = default_conv_kwargs['kernel_size']
 
     for epochs in hparams.epochs:
-        print(epochs)
         hyp['misc']['train_epochs'] = epochs
-        hyp['misc']['ema']['epochs'] = int(epochs - 3)
+        hyp['misc']['ema']['epochs'] = int(math.ceil(epochs - 3))
 
         for ksize_mult in hparams.kernel_size_multiplier:
             default_conv_kwargs['kernel_size'] = ksize_orig * ksize_mult
