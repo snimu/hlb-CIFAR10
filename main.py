@@ -856,7 +856,7 @@ def print_model():
     print(pcd.pinit.model_graph)
 
 
-def merge_many_models(model_counts: list[int]) -> None:
+def merge_many_models(model_counts: list[int], weight_decay: float | None) -> None:
     for model_count in model_counts:
         print(f"Train {model_count} Models...")
         models = []
@@ -886,11 +886,14 @@ def merge_many_models(model_counts: list[int]) -> None:
         print("Save Results...")
         ksize = default_conv_kwargs['kernel_size']
         os.makedirs("results", exist_ok=True)
-        with open(f"results/merge_{model_count}_{ksize}x{ksize}.txt", "w") as f:
+        name = f"results/merge_{model_count}_{ksize}x{ksize}"
+        name += f"_wd{weight_decay}" if weight_decay is not None else ""
+        name += ".txt"
+        with open(name, "w") as f:
             f.write("\n".join(results))
 
 
-def train_merge_train(model_counts: list[int]):
+def train_merge_train(model_counts: list[int], weight_decay: float | None) -> None:
     for model_count in model_counts:
         result = ""
         hyp['misc']['train_epochs'] = 5
@@ -932,7 +935,10 @@ def train_merge_train(model_counts: list[int]):
         print("Save Results...")
         ksize = default_conv_kwargs['kernel_size']
         os.makedirs("results", exist_ok=True)
-        with open(f"results/merge_train_{model_count}_{ksize}x{ksize}.txt", "w") as f:
+        name = f"results/merge_train_{model_count}_{ksize}x{ksize}"
+        name += f"_wd{weight_decay}" if weight_decay is not None else ""
+        name += ".txt"
+        with open(name, "w") as f:
             f.write(result)
 
 
@@ -950,7 +956,7 @@ def test_dataset_slice():
     assert count == dataset_size // batchsize
 
 
-def train_on_different_data_then_merge(model_counts: list[int]):
+def train_on_different_data_then_merge(model_counts: list[int], weight_decay: float | None) -> None:
     """
     Train a number of models on different data, then
     merge them together.
@@ -1023,7 +1029,10 @@ def train_on_different_data_then_merge(model_counts: list[int]):
         ksize = default_conv_kwargs['kernel_size']
         epochs = hyp['misc']['train_epochs']
         os.makedirs("results", exist_ok=True)
-        with open(f"results/merge_many_different_datasets_{model_count}models_{epochs}epochs_{ksize}x{ksize}.txt", "w") as f:
+        name = f"results/merge_many_different_datasets_{model_count}models_{epochs}epochs_{ksize}x{ksize}"
+        name += f"_wd{weight_decay}" if weight_decay is not None else ""
+        name += ".txt"
+        with open(name, "w") as f:
             f.write("\n".join(results))
 
 
@@ -1038,14 +1047,18 @@ def main():
     parser.add_argument("-c", "--model_count", type=int, default=[3], nargs="*")
     parser.add_argument("-t", "--train_merge_train", action="store_true", default=False)
     parser.add_argument("-s", "--train_different_datasets", action="store_true", default=False)
+    parser.add_argument("-w", "--weight_decay", type=float, default=None)
     hparams = parser.parse_args()
+
+    if hparams.weight_decay is not None:
+        hyp['opt']['bias_decay'] = hparams.weight_decay
+        hyp['opt']['non_bias_decay'] = hparams.weight_decay
 
     ksize_orig = default_conv_kwargs['kernel_size']
 
     for epochs in hparams.epochs:
         hyp['misc']['train_epochs'] = epochs
         hyp['misc']['ema']['epochs'] = int(epochs - 3)
-
 
         for ksize_mult in hparams.kernel_size_multiplier:
             default_conv_kwargs['kernel_size'] = ksize_orig * ksize_mult
@@ -1055,11 +1068,11 @@ def main():
             elif hparams.print:
                 print_model()
             elif hparams.train_merge_train:
-                train_merge_train(hparams.model_count)
+                train_merge_train(hparams.model_count, hparams.weight_decay)
             elif hparams.merge_many:
-                merge_many_models(hparams.model_count)
+                merge_many_models(hparams.model_count, hparams.weight_decay)
             elif hparams.train_different_datasets:
-                train_on_different_data_then_merge(hparams.model_count)
+                train_on_different_data_then_merge(hparams.model_count, hparams.weight_decay)
             else:
                 rebasin_model()
 
