@@ -1062,7 +1062,7 @@ def test_loss_predictiveness_before_bn_recalc():
     model_dir = "models/a-b-rebasin"
     os.makedirs(model_dir, exist_ok=True)
     interp = rebasin.interpolation.LerpSimple(
-        [model_a, model_b], ["cuda", "cuda"], savedir=model_dir, logging_level="info"
+        [model_a, model_b], devices=["cuda", "cuda"], savedir=model_dir, logging_level="info"
     )
     interp.interpolate(steps=99)
 
