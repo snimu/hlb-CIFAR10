@@ -1108,7 +1108,7 @@ def main():
     parser.add_argument("-t", "--train_merge_train", action="store_true", default=False)
     parser.add_argument("-s", "--train_different_datasets", action="store_true", default=False)
     parser.add_argument("-w", "--weight_decay", type=float, default=None)
-    parser.add_argument("test_loss_predictiveness_before_bn_recalc", action="store_true", default=False)
+    parser.add_argument("--test_loss_predictiveness_before_bn_recalc", action="store_true", default=False)
     hparams = parser.parse_args()
 
     if hparams.weight_decay is not None:
