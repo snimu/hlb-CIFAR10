@@ -688,16 +688,17 @@ def eval_fn(model, device):
 
 
 @torch.no_grad()
-def eval_model(model, device):
+def eval_model(model, device, recalculate_bn_stats=True):
     global data, hyp
 
     model = model.to(device)
 
     # Recalculate BatchNorm running stats
-    model.train()
-    for x, _ in get_batches(data, key='train', batchsize=2500, cutmix_size=1):
-        x = x.to(device)
-        model(x)
+    if recalculate_bn_stats:
+        model.train()
+        for x, _ in get_batches(data, key='train', batchsize=2500, cutmix_size=1):
+            x = x.to(device)
+            model(x)
 
     # Evaluate
     model.eval()
@@ -1039,6 +1040,62 @@ def train_on_different_data_then_merge(model_counts: list[int], weight_decay: fl
             f.write("\n".join(results))
 
 
+def test_loss_predictiveness_before_bn_recalc():
+    """
+    Recalculating the BatchNorm-statistics on large datasets is a pain.
+
+    This test checks if you can predict the loss (and with that, hopefully the accuracy)
+    of a model with its BatchNorm-statistics re-calculated
+    from when its BatchNorm-statistics are reset.
+    That would allow for very fine-grained interpolation between two models,
+    followed by the re-calculation of the BatchNorm-statistics of the best few models only,
+    saving significantly on compute.
+    """
+    model_a, _ = train_model()
+    model_b, _ = train_model()
+    batch, _ = next(get_batches(data, key='eval', batchsize=2500))
+
+    pcd = rebasin.PermutationCoordinateDescent(model_a, model_b, batch, device_b="cuda")
+    pcd.rebasin()
+
+    # I don't care about the other interpolations; I just want to see if the loss is predictable
+    model_dir = "models/a-b-rebasin"
+    os.makedirs(model_dir, exist_ok=True)
+    interp = rebasin.interpolation.LerpSimple(
+        [model_a, model_b], ["cuda", "cuda"], savedir=model_dir, logging_level="info"
+    )
+    interp.interpolate(steps=99)
+
+    print("Evaluating models...")
+    results = {
+        "step": [],
+        "loss_before": [],
+        "loss_recalc": [],
+        "acc_before": [],
+        "acc_recalc": [],
+    }
+    loop = tqdm(get_filenames(model_dir), smoothing=0)
+    working_model = make_net()
+    for step, filename in enumerate(loop):
+        loop.set_description(filename)
+        working_model.load_state_dict(torch.load(filename))
+        for module in working_model.modules():
+            if isinstance(module, (nn.BatchNorm2d, nn.BatchNorm1d, nn.BatchNorm3d)):
+                module.reset_running_stats()
+        loss_before, acc_before = eval_model(working_model, "cuda", recalculate_bn_stats=False)
+        loss_recalc, acc_recalc = eval_model(working_model, "cuda", recalculate_bn_stats=True)
+        results["step"].append(step+1)  # 1..99, not 0..98
+        results["loss_before"].append(loss_before)
+        results["loss_recalc"].append(loss_recalc)
+        results["acc_before"].append(acc_before)
+        results["acc_recalc"].append(acc_recalc)
+
+    print("Saving results...")
+    os.makedirs("results", exist_ok=True)
+    df = pd.DataFrame(results)
+    df.to_csv("results/loss_predictiveness_before_bn_recalc.csv", index=False)
+
+
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
@@ -1051,6 +1108,7 @@ def main():
     parser.add_argument("-t", "--train_merge_train", action="store_true", default=False)
     parser.add_argument("-s", "--train_different_datasets", action="store_true", default=False)
     parser.add_argument("-w", "--weight_decay", type=float, default=None)
+    parser.add_argument("test_loss_predictiveness_before_bn_recalc", action="store_true", default=False)
     hparams = parser.parse_args()
 
     if hparams.weight_decay is not None:
@@ -1076,6 +1134,8 @@ def main():
                 merge_many_models(hparams.model_count, hparams.weight_decay)
             elif hparams.train_different_datasets:
                 train_on_different_data_then_merge(hparams.model_count, hparams.weight_decay)
+            elif hparams.test_loss_predictiveness_before_bn_recalc:
+                test_loss_predictiveness_before_bn_recalc()
             else:
                 rebasin_model(hparams.weight_decay)
 
