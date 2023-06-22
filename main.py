@@ -1078,7 +1078,7 @@ def test_loss_predictiveness_before_bn_recalc():
     working_model = make_net()
     for step, filename in enumerate(loop):
         loop.set_description(filename)
-        working_model.load_state_dict(torch.load(filename))
+        working_model.load_state_dict(torch.load(os.path.join(model_dir, filename)))
         for module in working_model.modules():
             if isinstance(module, (nn.BatchNorm2d, nn.BatchNorm1d, nn.BatchNorm3d)):
                 module.reset_running_stats()
