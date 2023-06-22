@@ -1077,7 +1077,7 @@ def test_loss_predictiveness_before_bn_recalc():
         "acc_recalc": [],
     }
     loop = tqdm(get_filenames(model_dir), smoothing=0)
-    working_model = copy.deepcopy(model_a)  # To preserve the BatchNorm-statistics of model_a
+    working_model = make_net()
     for step, filename in enumerate(loop):
         loop.set_description(filename)
         working_model.load_state_dict(torch.load(os.path.join(model_dir, filename)))
