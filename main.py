@@ -1084,7 +1084,14 @@ def test_loss_predictiveness_before_bn_recalc():
         loop.set_description(filename)
         working_model.load_state_dict(torch.load(os.path.join(model_dir, filename)))
 
-        # Keep BatchNorm statistics from model_a and evaluate
+        # Change BatchNorm statistics to those of model_a and evaluate
+        for mw, ma in zip(working_model.modules(), model_a.modules()):
+            if not isinstance(mw, (nn.BatchNorm2d, nn.BatchNorm1d, nn.BatchNorm3d)):
+                continue
+
+            mw.running_mean = ma.running_mean
+            mw.running_var = ma.running_var
+            mw.num_batches_tracked = ma.num_batches_tracked
         loss_bn_a, acc_bn_a = eval_model(working_model, "cuda", recalculate_bn_stats=False)
 
         # Change BatchNorm statistics to those of model_b and evaluate
