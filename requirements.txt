@@ -2,7 +2,7 @@ torch
 torchvision
 graphviz
 torchview
-rebasin>=0.0.38
+rebasin>=0.0.47
 pandas
 tqdm
 graphviz
