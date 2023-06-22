@@ -1122,7 +1122,7 @@ def main():
         hyp['misc']['ema']['epochs'] = int(math.ceil(epochs - 3))
 
         for ksize_mult in hparams.kernel_size_multiplier:
-            default_conv_kwargs['kernel_size'] = ksize_orig * ksize_mult
+            default_conv_kwargs['kernel_size'] = int(math.floor(ksize_orig * ksize_mult))
 
             if hparams.draw:
                 draw()
