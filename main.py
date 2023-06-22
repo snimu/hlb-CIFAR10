@@ -1069,10 +1069,12 @@ def test_loss_predictiveness_before_bn_recalc():
     print("Evaluating models...")
     results = {
         "step": [],
-        "loss_before": [],
+        "loss_bn_a": [],
+        "loss_bn_b": [],
         "loss_reset": [],
         "loss_recalc": [],
-        "acc_before": [],
+        "acc_bn_a": [],
+        "acc_bn_b": [],
         "acc_reset": [],
         "acc_recalc": [],
     }
@@ -1082,20 +1084,36 @@ def test_loss_predictiveness_before_bn_recalc():
         loop.set_description(filename)
         working_model.load_state_dict(torch.load(os.path.join(model_dir, filename)))
 
-        loss_before, acc_before = eval_model(working_model, "cuda", recalculate_bn_stats=False)
+        # Keep BatchNorm statistics from model_a and evaluate
+        loss_bn_a, acc_bn_a = eval_model(working_model, "cuda", recalculate_bn_stats=False)
 
+        # Change BatchNorm statistics to those of model_b and evaluate
+        for mw, mb in zip(working_model.modules(), model_b.modules()):
+            if not isinstance(mw, (nn.BatchNorm2d, nn.BatchNorm1d, nn.BatchNorm3d)):
+                continue
+
+            mw.running_mean = mb.running_mean
+            mw.running_var = mb.running_var
+            mw.num_batches_tracked = mb.num_batches_tracked
+
+        loss_bn_b, acc_bn_b = eval_model(working_model, "cuda", recalculate_bn_stats=False)
+
+        # Reset BatchNorm statistics and evaluate
         for module in working_model.modules():
             if isinstance(module, (nn.BatchNorm2d, nn.BatchNorm1d, nn.BatchNorm3d)):
                 module.reset_running_stats()
         loss_reset, acc_reset = eval_model(working_model, "cuda", recalculate_bn_stats=False)
 
+        # Recalculate BatchNorm statistics and evaluate
         loss_recalc, acc_recalc = eval_model(working_model, "cuda", recalculate_bn_stats=True)
 
         results["step"].append(step+1)  # 1..99, not 0..98
-        results["loss_before"].append(loss_before)
+        results["loss_bn_a"].append(loss_bn_a)
+        results["loss_bn_b"].append(loss_bn_b)
         results["loss_reset"].append(loss_reset)
         results["loss_recalc"].append(loss_recalc)
-        results["acc_before"].append(acc_before)
+        results["acc_bn_a"].append(acc_bn_a)
+        results["acc_bn_b"].append(acc_bn_b)
         results["acc_reset"].append(acc_reset)
         results["acc_recalc"].append(acc_recalc)
 
