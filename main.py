@@ -531,13 +531,15 @@ def print_training_details(columns_list, separator_left='|  ', separator_right='
     if is_final_entry:
         print('-'*(len(print_string))) # print the final output bar
 
-print_training_details(logging_columns_list, column_heads_only=True) ## print out the training column heads before we print the actual content for each run.
+
 
 ########################################
 #           Train and Eval             #
 ########################################
 
 def train_model(model=None, dataset_slice=None):
+    print_training_details(logging_columns_list,
+                           column_heads_only=True)  ## print out the training column heads before we print the actual content for each run.
     # Initializing constants for the whole run.
     net_ema = None ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
                    ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
