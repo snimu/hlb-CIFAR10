@@ -1159,6 +1159,8 @@ def main():
             for ksize in hparams.ksize if hparams.ksize is not None else [3]:
                 default_conv_kwargs['kernel_size'] = ksize
 
+                print(f"\n\nSettings: {epochs=}, {ksize=}, weight_decay={hparams.weight_decay[i]}")
+
                 if hparams.draw:
                     draw()
                 elif hparams.print:
