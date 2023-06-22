@@ -1120,7 +1120,9 @@ def test_loss_predictiveness_before_bn_recalc():
     print("Saving results...")
     os.makedirs("results", exist_ok=True)
     df = pd.DataFrame(results)
-    df.to_csv("results/loss_predictiveness_before_bn_recalc.csv", index=False)
+    wd = hyp['opt']['bias_decay']
+    ks = default_conv_kwargs['kernel_size']
+    df.to_csv(f"results/loss_predictiveness_before_bn_recalc_wd{wd}_ks{ks}.csv", index=False)
 
 
 def main():
