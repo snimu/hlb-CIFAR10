@@ -1136,37 +1136,38 @@ def main():
     parser.add_argument("-c", "--model_count", type=int, default=[3], nargs="*")
     parser.add_argument("-t", "--train_merge_train", action="store_true", default=False)
     parser.add_argument("-s", "--train_different_datasets", action="store_true", default=False)
-    parser.add_argument("-w", "--weight_decay", type=float, default=None)
+    parser.add_argument("-w", "--weight_decay", type=float, default=None, nargs="*")
     parser.add_argument("--test_loss_predictiveness_before_bn_recalc", action="store_true", default=False)
     hparams = parser.parse_args()
 
-    if hparams.weight_decay is not None:
-        hyp['opt']['bias_decay'] = hparams.weight_decay
-        hyp['opt']['non_bias_decay'] = hparams.weight_decay
-
     ksize_orig = default_conv_kwargs['kernel_size']
 
-    for epochs in hparams.epochs:
-        hyp['misc']['train_epochs'] = epochs
-        hyp['misc']['ema']['epochs'] = int(math.ceil(epochs - 3))
+    for i in range(len(hparams.weight_decay)) if hparams.weight_decay is not None else [0]:
+        if hparams.weight_decay is not None:
+            hyp['opt']['bias_decay'] = hparams.weight_decay[i]
+            hyp['opt']['non_bias_decay'] = hparams.weight_decay[i]
 
-        for ksize_mult in hparams.kernel_size_multiplier:
-            default_conv_kwargs['kernel_size'] = int(math.floor(ksize_orig * ksize_mult))
+        for epochs in hparams.epochs:
+            hyp['misc']['train_epochs'] = epochs
+            hyp['misc']['ema']['epochs'] = int(math.ceil(epochs - 3))
 
-            if hparams.draw:
-                draw()
-            elif hparams.print:
-                print_model()
-            elif hparams.train_merge_train:
-                train_merge_train(hparams.model_count, hparams.weight_decay)
-            elif hparams.merge_many:
-                merge_many_models(hparams.model_count, hparams.weight_decay)
-            elif hparams.train_different_datasets:
-                train_on_different_data_then_merge(hparams.model_count, hparams.weight_decay)
-            elif hparams.test_loss_predictiveness_before_bn_recalc:
-                test_loss_predictiveness_before_bn_recalc()
-            else:
-                rebasin_model(hparams.weight_decay)
+            for ksize_mult in hparams.kernel_size_multiplier:
+                default_conv_kwargs['kernel_size'] = int(math.floor(ksize_orig * ksize_mult))
+
+                if hparams.draw:
+                    draw()
+                elif hparams.print:
+                    print_model()
+                elif hparams.train_merge_train:
+                    train_merge_train(hparams.model_count, hparams.weight_decay)
+                elif hparams.merge_many:
+                    merge_many_models(hparams.model_count, hparams.weight_decay)
+                elif hparams.train_different_datasets:
+                    train_on_different_data_then_merge(hparams.model_count, hparams.weight_decay)
+                elif hparams.test_loss_predictiveness_before_bn_recalc:
+                    test_loss_predictiveness_before_bn_recalc()
+                else:
+                    rebasin_model(hparams.weight_decay)
 
 
 if __name__ == '__main__':
