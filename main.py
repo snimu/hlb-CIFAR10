@@ -1135,7 +1135,7 @@ def test_loss_predictiveness_before_bn_recalc():
 def main():
     # Enable larger convolutional kernel sizes
     parser = argparse.ArgumentParser()
-    parser.add_argument('-k', '--kernel_size_multiplier', type=int, default=[1], nargs="*")
+    parser.add_argument('-k', '--ksize', type=int, default=None, nargs="*")
     parser.add_argument('-e', '--epochs', type=int, default=[hyp['misc']['train_epochs']], nargs="*")
     parser.add_argument('-d', '--draw', action='store_true', default=False)
     parser.add_argument("-p", "--print", action="store_true", default=False)
@@ -1147,8 +1147,6 @@ def main():
     parser.add_argument("--test_loss_predictiveness_before_bn_recalc", action="store_true", default=False)
     hparams = parser.parse_args()
 
-    ksize_orig = default_conv_kwargs['kernel_size']
-
     for i in range(len(hparams.weight_decay)) if hparams.weight_decay is not None else [0]:
         if hparams.weight_decay is not None:
             hyp['opt']['bias_decay'] = hparams.weight_decay[i]
@@ -1158,8 +1156,8 @@ def main():
             hyp['misc']['train_epochs'] = epochs
             hyp['misc']['ema']['epochs'] = int(math.ceil(epochs - 3))
 
-            for ksize_mult in hparams.kernel_size_multiplier:
-                default_conv_kwargs['kernel_size'] = int(math.floor(ksize_orig * ksize_mult))
+            for ksize in hparams.ksize if hparams.ksize is not None else [3]:
+                default_conv_kwargs['kernel_size'] = ksize
 
                 if hparams.draw:
                     draw()
